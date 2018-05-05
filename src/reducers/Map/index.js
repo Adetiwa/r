@@ -105,7 +105,7 @@ import {
   SEND_USER_LOC,
   SEND_USER_LOC_SUCCESS,
   SEND_USER_LOC_NULL,
-
+  SET_ACTIVE_BUS_INFO,
   CANCEL_TRIP_FAILED,
   CANCEL_TRIP_SUCCESS,
   CANCELLING_TRIP,
@@ -131,6 +131,7 @@ import {
   RESET_ROUTE,
   GETTING_NEARBY_ROUTES,
   GET_NEARBY_ROUTES,
+  SET_ACTIVE_BUS,
   SET_PAYMENT,
   GET_WALLET,
   GETTING_WALLET,
@@ -138,8 +139,8 @@ import {
   RESET_NETWORK,
   COUPON_ON,
   COUPON,
-  NEW_STUFFS
- } from '../../actions/types';
+  NEW_STUFFS,
+   } from '../../actions/types';
 
 import { Dimensions } from "react-native";
 const {width, height} = Dimensions.get("window");
@@ -166,6 +167,7 @@ const INITIAL_STATE =
     suggested_route: null,
     loading: false,
     error: '',
+    active_bus_info: null,
     status: false,
     loadingReg: false,
     errorReg: '',
@@ -290,6 +292,7 @@ const INITIAL_STATE =
     coupon_message: '',
     new_coords: null,
     changed: false,
+    active_bus: 0,
 
 }
 
@@ -307,6 +310,11 @@ export default (state = INITIAL_STATE, action) => {
        statusReg: true,
 
     };
+    
+  case SET_ACTIVE_BUS:
+    return {...state, active_bus: action.payload };
+  case SET_ACTIVE_BUS_INFO:
+    return {...state, active_bus_info: action.payload };
   case COUPON_ON:
     return {...state, getting_coupon: action.payload };
   case COUPON:

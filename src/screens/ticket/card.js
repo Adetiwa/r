@@ -18,6 +18,78 @@ export default class CardView extends Component {
         }
       }
 
+getPayStatus(payment) {
+  if (payment == "active") {
+    return (
+      <Text style = {{
+                 fontSize: 15,
+                 fontFamily: 'Montserrat-Regular',
+                 color: 'rgba(0,0,0,0.9)',
+              }}> Expires in {this.props.expires} {this.props.expires > 1 ? 'days' : 'day'} 
+              
+          </Text>
+    );
+  } else if (payment == 'pending') {
+   return (
+       <Text style = {{
+                 fontSize: 15,
+                 fontFamily: 'Montserrat-Regular',
+                 color: 'rgba(0,0,0,0.9)',
+              }}> Active in {this.props.active} {this.props.active > 1 ? 'days' : 'day'} 
+              
+          </Text>
+    );
+  } else {
+    return (
+       <Text style = {{
+            fontSize: 15,
+            fontFamily: 'Montserrat-Regular',
+            color: 'rgba(0,0,0,0.9)',
+         }}> Expired
+         
+     </Text>
+    );
+  }
+}
+
+getColor(pa) {
+  if (pa == 'active') {
+    return (
+      <View style = {{
+                width: 20,
+                height: 20,
+                backgroundColor: '#FFF',
+                borderColor: '#87D37C',
+                borderWidth: 5,
+                borderRadius: 20,
+            }}/>
+    );
+  } else if (pa == 'pending') {
+    return (
+      <View style = {{
+                width: 20,
+                height: 20,
+                backgroundColor: '#FFF',
+                borderColor: '#F49C00',
+                borderWidth: 5,
+                borderRadius: 20,
+            }}/>
+    );
+  } else {
+    return (
+          <View style = {{
+                width: 20,
+                height: 20,
+                backgroundColor: '#FFF',
+                borderColor: '#F05959',
+                borderWidth: 5,
+                borderRadius: 20,
+            }} 
+            />
+    );
+  }
+}
+
 
   render() {
     if (!this.props.av) {
@@ -97,26 +169,8 @@ export default class CardView extends Component {
               color: 'rgba(0,0,0,0.2)',
             }}>{this.props.distance}</Text>
               */}
-            {this.props.payment  == 'active'
-            ? 
-            <View style = {{
-                width: 20,
-                height: 20,
-                backgroundColor: '#FFF',
-                borderColor: '#87D37C',
-                borderWidth: 5,
-                borderRadius: 20,
-            }}/> :
-            <View style = {{
-                width: 20,
-                height: 20,
-                backgroundColor: '#FFF',
-                borderColor: '#F05959',
-                borderWidth: 5,
-                borderRadius: 20,
-            }} 
-            />
-        }
+              
+            {this.getColor(this.props.payment)}
             </View>
             <View style = {{
               flex: 8,
@@ -150,32 +204,7 @@ export default class CardView extends Component {
               }}> |
               
           </Text>
-{this.props.payment  == 'active' ?
-            
-          <Text style = {{
-                 fontSize: 15,
-                 fontFamily: 'Montserrat-Regular',
-                 color: 'rgba(0,0,0,0.9)',
-              }}> Expires in {this.props.expires} {this.props.expires > 1 ? 'days' : 'day'} 
-              
-          </Text>
-
-          :
-
-          <Text style = {{
-            fontSize: 15,
-            fontFamily: 'Montserrat-Regular',
-            color: 'rgba(0,0,0,0.9)',
-         }}> Expired
-         
-     </Text>
-
-            }
-     
-            
-   
-         
-        
+          {this.getPayStatus(this.props.payment)}
 
         </View>
 

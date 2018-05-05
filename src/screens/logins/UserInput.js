@@ -28,6 +28,7 @@ export default class UserInput extends Component {
 						borderWidth: this.props.error ? 1 : 0,
 						color: '#22313F',
 					}}
+					keyboardType={this.props.keyboardType}
 					value = {this.props.value}
 					placeholder={this.props.placeholder}
 					secureTextEntry={this.props.secureTextEntry}

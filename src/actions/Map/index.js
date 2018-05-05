@@ -87,6 +87,7 @@ import {
    LOGOUT_SUCCESS,
    LOGOUT_FAILURE,
    MATCH_ALERT_ERROR,
+   SET_ACTIVE_BUS,
    MATCH_ALERT,
    NO_NEW_MATCH,
    SCHEDULE,
@@ -152,7 +153,9 @@ import {
   RESET_ROUTE,
   COUPON_ON,
   COUPON,
-  NEW_STUFFS
+  NEW_STUFFS,
+  SET_ACTIVE_BUS_INFO
+  
   } from '../types';
 
 
@@ -189,6 +192,21 @@ import {
   export const setLongitude = (val) => {
     return {
       type: SET_LONGITUDE,
+      payload: val
+    };
+  };
+
+    
+  export const loginSuccess = (val) => {
+    return {
+      type: LOGIN_USER_SUCCESS,
+      payload: val
+    };
+  };
+
+  export const newloginSuccess = (val) => {
+    return {
+      type: NEW_USER_SUCCESS,
       payload: val
     };
   };
@@ -366,7 +384,7 @@ export const save_summary_state = (data) => {
 export const clearEverything = (fcm_token) => {
   return(dispatch) => {
     dispatch({ type: LOGGING_OUT, payload: true });
-    
+    dispatch({ type: NETWORK, payload: true });
     fetch('https://admin.rova.com.ng/api2/deltoken', {
 
       method: 'POST',
@@ -405,7 +423,7 @@ export const clearEverything = (fcm_token) => {
 export const get_wallet_info = (id) => {
   return(dispatch) => {
     dispatch({ type: GETTING_WALLET, payload: true });
-    
+    dispatch({ type: NETWORK, payload: true });
     fetch('https://admin.rova.com.ng/api2/check-wallet', {
 
       method: 'POST',
@@ -540,6 +558,20 @@ export const set_suggestion_pick = (suggestion) => {
   return {
     type: SET_SUGGETION_PICKUP,
     payload: suggestion,
+  }
+}
+
+export const set_active_bus = (bus) => {
+  return {
+    type: SET_ACTIVE_BUS,
+    payload: bus,
+  }
+}
+
+export const set_active_bus_info = (bus) => {
+  return {
+    type: SET_ACTIVE_BUS_INFO,
+    payload: bus,
   }
 }
 
@@ -711,7 +743,8 @@ function cleanString(input) {
 export const getAddressPrediction = (input) => {
         return(dispatch) => {
           dispatch({ type: GETTING_PREDICTION, payload: true });
-          //dispatch({ type: EMPTY_PREDICTIONS, payload: true });
+          dispatch({ type: NETWORK, payload: true });
+              //dispatch({ type: EMPTY_PREDICTIONS, payload: true });
           
           //Required parameters
           var api_key = "AIzaSyCCcOcMglhvXnRsniygV44jmi5QzMdfyVI";

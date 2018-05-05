@@ -186,6 +186,7 @@ onWorkChange(text) {
 				<UserInput source={usernameImg}
 					placeholder='Email'
 					autoCapitalize={'none'}
+					keyboardType={'email-address'}
 					returnKeyType={'done'}
 					value = {this.props.email}
 			  	onChangeText = {(input)=>this.props.emailChanged(input)}
@@ -241,6 +242,7 @@ onWorkChange(text) {
 				<UserInput 
 					placeholder='Email'
 					autoCapitalize={'none'}
+					keyboardType={'email-address'}
 					value = {this.props.email}
 			  	onChangeText = {(input)=>this.props.emailChanged(input)}
           returnKeyType={'done'}

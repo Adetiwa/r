@@ -42,17 +42,21 @@ export default class Error2 extends Component {
      
             <Text style = {{
                 textAlign: 'center',
-                fontFamily: "Montserrat",
-                //paddingLeft: 50,
+                fontFamily: "Montserrat-Regular",
+                //height: 40,
                 color: '#FFF',
                 paddingTop: 5,
                 paddingBottom: 5,
-                paddingRight: 10,
-                paddingLeft: 10,
-                fontSize: 15,
+                fontSize: 18,
+                alignContent: 'center',
+                justifyContent: 'center',
+                alignItems: 'center',
+                textAlign: 'center',
+                alignSelf: 'center',
             }}>
                {this.props.msg}
             </Text>
+            
       </View>
     );
   }
@@ -61,12 +65,15 @@ export default class Error2 extends Component {
 const styles = StyleSheet.create({
     container: {
         //flex: 1,
-        marginTop: 35,
-        marginBottom: 5,
+        marginTop: 10,
+        marginBottom: 10,
         flexDirection: 'row',
+        borderRadius: 2,
+        borderWidth: 1,
+        borderColor: '#F09B95',
         
         //height: 40,
-        backgroundColor: '#F05959',
+        backgroundColor: '#F09B95',
         alignItems: 'center',
         justifyContent: 'center',
     },

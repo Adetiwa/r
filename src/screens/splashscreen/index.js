@@ -10,6 +10,8 @@ import {  destinationChanged,
           fetchPrice,
           setUser,
 } from '../../actions/Map';
+import { NavigationActions } from 'react-navigation'
+
 const {width, height} = Dimensions.get("window");
 const SCREEN_WIDTH = width;
 const SCREEN_HEIGHT = height;
@@ -45,40 +47,31 @@ class SplashPage extends Component {
           const user = AsyncStorage.getItem(USER_TOKEN)
           .then((data)=> {
             if (data !== null) {
-              // We have data!!
-
-            // console.log("Data saved is "+JSON.stringify(data));
-
                 this.props.setUser(JSON.parse(data));
-                this.props.navigation.navigate('Map');
+                // this.props.navigation.navigate('Map');
+                this.props.navigation.dispatch(NavigationActions.reset({
+                    index: 0,
+                    key: null,
+                    actions: [NavigationActions.navigate({ routeName: 'Map' })]
+                }))
+              
             } else {
               try {
-                this.props.navigation.navigate('Home');
-              //   await AsyncStorage.setItem(USER_TOKEN, JSON.stringify(this.props.user));
+              //  this.props.navigation.navigate('RealHome');
+                this.props.navigation.dispatch(NavigationActions.reset({
+                  index: 0,
+                  key: null,
+                  actions: [NavigationActions.navigate({ routeName: 'RealHome' })]
+              }))
+           
               } catch (error) {
-                  // Error saving data
               }
             }
           })
-        
-      
-     
     }
 
-    callanimate() {
-      Animated.timing(this.animatedValue, {
-        toValue: 2000,
-        duration: 2000,
-        easing: Easing.bounce,
-        //easing: Easing.inOut(Easing.ease),
-      }).start();
-    }
     render () {
-        const animatedStyle = {
-          transform: [
-            { translateX: this.animatedValue },
-          ]
-        }
+      
         return (
             <View style={{flex: 1, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center'}}>
               {/* <StatusBar backgroundColor='#0397dd' barStyle='light-content' /> */}

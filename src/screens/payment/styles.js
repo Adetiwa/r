@@ -18,7 +18,7 @@ export default {
     height: 50, 
     borderColor: '#EEE', 
     borderWidth: 1,
-    fontFamily: "Montserrat",
+    fontFamily: "Montserrat-Regular",
     fontSize: 20,
     paddingLeft: 20,
   },

@@ -3,6 +3,8 @@ import { Content,View, CardItem, Text, Body, Badge } from "native-base";
 import { Image } from 'react-native';
 
 import QRCode from 'react-native-qrcode-svg';
+import moment from 'moment';
+import * as Animatable from 'react-native-animatable';
 
 
 export default class Ticket extends Component {
@@ -16,6 +18,9 @@ export default class Ticket extends Component {
           activeYear: '',
           activeMonth: '',
           activeDay: '',
+
+          type: '',
+          active: null,
           
         }
     }
@@ -50,8 +55,38 @@ export default class Ticket extends Component {
     }
     
 
+  formatDate() {
+    var d = new Date(),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [year, month, day].join('-');
+}
+
+
+  getDataDiff(date) {
+	var date1 = new Date(date);
+	var date2 = new Date(this.formatDate());
+	var timeDiff = Math.abs(date2.getTime() - date1.getTime());
+	var diffDays = Math.ceil(timeDiff / (1000 * 3600 * 24)); 
+
+	return diffDays;
+}
+
+
     componentDidMount() {
         var dat = this.props.ticket[0].date_expired;
+        
+        this.setState({type : this.props.ticket[0].payment_status});
+
+        if (this.props.ticket[0].payment_status == 'pending') {
+            this.setState({active :this.getDataDiff(this.props.ticket[0].date_active)});
+        }
+
         var month = dat.substring(5, 7);
         var day = dat.substring(8, 10);
         var year = dat.substring(0, 4);
@@ -72,6 +107,7 @@ export default class Ticket extends Component {
         
 
     }
+         
   render() {
         return (
             <View style = {{
@@ -102,34 +138,34 @@ export default class Ticket extends Component {
                     <Text style = {{
                         color: '#F49C00',
                         fontSize: 40,
-                        fontFamily: 'Montserrat',
-                        fontWeight: 'bold',
+                        fontFamily: 'Montserrat-Regular',
+                        //fontWeight: 'bold',
                     }}>{this.state.expiryMonth}</Text>
                     <Text style = {{
                         color: '#F49C00',
-                        fontSize: 30,
-                        fontWeight: 'bold',
-                        fontFamily: 'Montserrat',
+                        fontSize: 18,
+                        //fontWeight: 'bold',
+                        fontFamily: 'Montserrat-Regular',
                     }}>{this.state.expiryYear}</Text>
                     <Text style = {{
                         color: '#F49C00',
-                        fontSize: 20,
-                        fontWeight: 'bold',
-                        fontFamily: 'Montserrat',
+                        fontSize: 18,
+                        //fontWeight: 'bold',
+                        fontFamily: 'Montserrat-Regular',
                     }}>{this.props.ticket[0].route}</Text>
                     {this.props.ticket[0].owning ?
                     <Text style = {{
                         color: '#F49C00',
-                        fontSize: 20,
-                        fontWeight: 'bold',
-                        fontFamily: 'Montserrat',
+                        fontSize: 18,
+                        //fontWeight: 'bold',
+                        fontFamily: 'Montserrat-Bold',
                     }}>OWING {this.props.ticket[0].amount_owing} </Text>
                     :
                     <Text style = {{
                         color: '#F49C00',
-                        fontSize: 20,
-                        fontWeight: 'bold',
-                        fontFamily: 'Montserrat',
+                        fontSize: 18,
+                        //fontWeight: 'bold',
+                        fontFamily: 'Montserrat-Bold',
                     }}>PAID ₦{this.props.ticket[0].payment_amount} </Text>
                     }
                     </View>
@@ -141,9 +177,8 @@ export default class Ticket extends Component {
                     <Text style = {{
                         color: '#F49C00',
                         fontSize: 30,
-                        fontWeight: 'bold',
-
-                        fontFamily: 'Montserrat',
+                        
+                        fontFamily: 'Montserrat-Regular',
                     }}>{this.state.expiryDay}</Text>
                     
                     </View>
@@ -158,14 +193,14 @@ export default class Ticket extends Component {
                         fontSize: 15,
                         width: 100,
                         marginTop: 40,
-                        fontFamily: 'Montserrat',
+                        fontFamily: 'Montserrat-Regular',
                         marginHorizontal: -30,
                         //fontWeight: 'bold',
                     }}> {this.props.ticket[0].payment_status.toUpperCase()}</Text>
                     </View>
 
                     <View style = {{
-                        backgroundColor: '#FFF',
+                        backgroundColor: this.state.type == 'active' ? '#FFF' : 'background:rgba(0,0,0,0.05)',
                         position: 'absolute',
                          left: 25, 
                          right: 50, 
@@ -175,16 +210,18 @@ export default class Ticket extends Component {
                          justifyContent: 'center', 
                          alignItems: 'center'
                     }}>
+                    {this.state.type == 'active' &&
                        <QRCode
                         //value= {`${this.props.ticket[0].payment_status}` `${this.props.ticket[0].date_expired}`}
-                        value = {`${this.props.ticket[0].payment_status} ${this.props.ticket[0].date_expired} ${this.props.ticket[0].payment_method} ${this.props.ticket[0].payment_payment_status}`}
+                        value = {`${this.props.user} ${this.props.ticket[0].payment_status} ${this.props.ticket[0].payment_method} ${this.props.ticket[0].payment_amount} ${this.props.ticket[0].owning} ${this.props.ticket[0].amount_owing_real}`}
                         size= {180}
                     // color={'red'}
                         //logo={logoFromFile}
                         /> 
+                    }
                     </View>
-
-                    <View style = {{
+                    {this.state.active != null &&
+                     <Animatable.View animation="pulse" easing="ease-out" iterationCount="infinite" style = {{
                         position: 'absolute',
                          left: 25, 
                          right: 50, 
@@ -192,7 +229,16 @@ export default class Ticket extends Component {
                          width: 200,
                          justifyContent: 'center', 
                          alignItems: 'center'
-                    }}></View>
+                    }}>
+                      <Text style = {{
+                            fontSize: 15,
+                            fontFamily: 'Montserrat-Regular',
+                            color: '#FFF',
+                        }}> Ticket Active in {this.state.active} {this.state.active > 1 ? 'days' : 'day'} 
+                        
+                    </Text>
+                    </Animatable.View>
+                    }
 
 
                 </View>
@@ -210,7 +256,7 @@ export default class Ticket extends Component {
                     transform: [{ rotate: '90deg'}],
                     fontSize: 16,
                     color: '#FFF',
-                    fontFamily: 'Montserrat',
+                    fontFamily: 'Montserrat-Regular',
                     zIndex: 100,
                     marginTop: 50,
                 }}>{this.state.activeDay}</Text>
@@ -219,7 +265,7 @@ export default class Ticket extends Component {
                     fontSize: 16,
                     color: '#FFF',
                     //fontWeight: 'bold',
-                    fontFamily: 'Montserrat',
+                    fontFamily: 'Montserrat-Regular',
                     zIndex: 100,
                     marginTop: 50,
                 }}>{this.state.activeMonth}</Text>
@@ -227,7 +273,7 @@ export default class Ticket extends Component {
                     transform: [{ rotate: '90deg'}],
                     color: '#FFF',
                     fontSize: 16,
-                    fontFamily: 'Montserrat',
+                    fontFamily: 'Montserrat-Regular',
                     //fontWeight: 'bold',
                     zIndex: 100,
                     marginTop: 30,
@@ -236,15 +282,19 @@ export default class Ticket extends Component {
                     transform: [{ rotate: '90deg'}],
                     color: '#FFF',
                     fontSize: 12,
-                    fontFamily: 'Montserrat',
+                    fontFamily: 'Montserrat-Regular',
                     zIndex: 100,
                     marginTop: 50,
                 }}> {this.props.ticket[0].payment_method}</Text>
           
                 </View>
+               
             </View>
+            
                 
     );
+    
   }
+  
 }
 

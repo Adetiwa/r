@@ -7,7 +7,9 @@ import {  destinationChanged,
           get_name_of_loc,
           update_region,
 
-        } from '../../actions/Map';
+		} from '../../actions/Map';
+		import Communications from 'react-native-communications';
+
 import { connect } from 'react-redux';
 import {
 	Content,
@@ -121,7 +123,7 @@ class SideBar extends Component {
 							
 								<Text style = {{
 									color: '#FFF',
-									fontFamily: 'Montserrat',
+									fontFamily: 'Montserrat-Regular',
 									fontSize: 20,
 									alignSelf: 'center',
 									textAlign: 'center',
@@ -130,7 +132,7 @@ class SideBar extends Component {
 							<Text style = {{
 									color: '#FFF',
 									marginTop: 10,
-									fontFamily: 'Montserrat',
+									fontFamily: 'Montserrat-Regular',
 									fontSize: 15,
 									alignSelf: 'center',
 									textAlign: 'center',
@@ -138,7 +140,7 @@ class SideBar extends Component {
 								<Text style = {{
 									color: '#EEE',
 									marginTop: 10,
-									fontFamily: 'Montserrat',
+									fontFamily: 'Montserrat-Regular',
 									fontSize: 12,
 									alignSelf: 'center',
 									textAlign: 'center',
@@ -154,7 +156,9 @@ class SideBar extends Component {
 			<View style = {{
 				flex: 7
 			}}>
-				<Content bounces={false} style={{ flex: 1, backgroundColor: "#fff", top: 20 }}>
+				<Content bounces={false} 
+				howsHorizontalScrollIndicator={false}
+				style={{ flex: 1, backgroundColor: "#fff", top: 20 }}>
 
 
 
@@ -205,8 +209,8 @@ class SideBar extends Component {
           borderBottomWidth: 0,
         }}
         //onPress={() => this.props.navigation.navigate('Map')}
-        onPress={ ()=>{ Linking.openURL('http://rova.com.ng/')}}>
-        <Left>
+        onPress={ ()=>Communications.email(['partners.rova.com.ng', 'info.rova.com.ng'],null,null,'Partnership','Hello, I want to partner with rova. My name is ')}>
+	   <Left>
           <Icon
                 style = {{color: "#777", fontSize: 18}}
                 name='bus'
@@ -215,7 +219,7 @@ class SideBar extends Component {
             <Text style = {{
               color: '#777',
 			  fontSize: 12,
-			  fontFamily: 'Montserrat',
+			  fontFamily: 'Montserrat-Regular',
 			  textAlign: 'right',
               borderBottomWidth: 0,
             }}>Partner with Rova</Text>

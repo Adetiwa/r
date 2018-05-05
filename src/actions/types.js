@@ -180,3 +180,5 @@ export const RESET_ROUTE = "RESET_ROUTE";
 export const COUPON_ON = "coupon_on";
 export const COUPON = "coupon";
 export const NEW_STUFFS = "NEW_STUFFS";
+export const SET_ACTIVE_BUS = "set_active_bus";
+export const SET_ACTIVE_BUS_INFO = "set_active_bus_info";

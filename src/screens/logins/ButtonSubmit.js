@@ -17,6 +17,7 @@ import { connect } from 'react-redux';
 
 import {  register,
 	loginUser,
+	resetNetwork,
 } from '../../actions/Map';
 
 import { Actions, ActionConst } from 'react-native-router-flux';
@@ -43,12 +44,14 @@ class ButtonSubmit extends Component {
 	}
 
 	async _onPress() {
+		this.props.resetNetwork();
 		if (this.props.email !== '' && this.props.password !== '') {
 			const awaits = this.props.loginUser(this.props.email, this.props.password);
 		}
 	}
 
 	async _onPress2() {
+		this.props.resetNetwork();
 		if (this.props.email !== '' && this.props.password !== '' && this.props.fullname !== '' && this.props.tel !== '') {
 			const awaits = this.props.register(this.props.fullname, this.props.tel, this.props.email, this.props.password, this.props.selected_route);
 		}
@@ -141,7 +144,7 @@ class ButtonSubmit extends Component {
 							disable = {(this.props.email === '' ||this.props.password === '') && this.props.loading}
 							onPress={this._onPress}
 							activeOpacity={1} >
-								{this.props.loading ?
+								{this.props.loading && this.props.network ?
 									<ActivityIndicator  color= '#FFF' style = {{
 										padding: 20,  
 									  }}/>
@@ -162,7 +165,7 @@ class ButtonSubmit extends Component {
 							onPress={this._onPress2}
 							disable = {(this.props.email === '' || this.props.password === '' || this.props.fullname === '' || this.props.tel === '') && this.props.loadingReg}
 							activeOpacity={1} >
-								{this.props.loadingReg ?
+								{this.props.loadingReg && this.props.network ?
 									<ActivityIndicator  color= '#FFF' style = {{
 										padding: 20,  
 									  }}/>
@@ -327,5 +330,6 @@ const mapStateToProps = ({ map }) => {
 export default connect(mapStateToProps, {
 	register,
 	loginUser,
+	resetNetwork,
   })(ButtonSubmit);
   

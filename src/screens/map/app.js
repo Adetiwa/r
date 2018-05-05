@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import { View, Image, NetInfo,  Dimensions, Animated, PermissionsAndroid,
-  Platform, TextInput,
-  
+  Platform, TextInput,  BackHandler, BackAndroid, 
   AsyncStorage,Easing, StatusBar, StyleSheet, Text, TouchableWithoutFeedback, TouchableOpacity} from "react-native";
 
   import { connect } from 'react-redux';
@@ -9,17 +8,23 @@ import FCM, {FCMEvent, RemoteNotificationResult, WillPresentNotificationResult, 
 
 import { ProgressDialog } from 'react-native-simple-dialogs';
 import SnackBar from 'react-native-snackbar-component';
+import Communications from 'react-native-communications';
 
 import Modal from "react-native-modal";
 
 import Ticket from './ticket';
+import StatusBarAlert from 'react-native-statusbar-alert';
 
 import Interactable from 'react-native-interactable';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
-
+import AwesomeAlert from 'react-native-awesome-alerts';
+import Loader from "../../components/loader";
+ 
 import {  destinationChanged,
   select_vehicle,
-  hoverondesc,
+  set_active_bus_info,
+  hoverondesc, all_route,
+  set_active_bus,
   getCurrentLocation,
   resetNetwork,
   get_name_of_loc,
@@ -105,6 +110,8 @@ drivers = [];
 class Map extends Component {
   constructor(props) {
     super(props);
+    this.close = this.close.bind(this);
+    
     this._deltaY = new Animated.Value(Screen.height-100);
     this.state = {
 
@@ -122,8 +129,26 @@ class Map extends Component {
     changed: false,
     newlat: null,
     newlng: null,
-    }
+    active_bus: 0,
+    showAlert: false,
+    openLoader: this.props.getting_route || this.props.getting_wallet || !this.props.network_connected,
+    isLoading: this.props.getting_wallet || this.props.getting_route,
+    msg: !this.props.network_connected && 'Network Unavailable'   
+  }
 }
+
+
+ showAlert = () => {
+    this.setState({
+      showAlert: true
+    });
+  };
+
+  hideAlert = () => {
+    this.setState({
+      showAlert: false
+    });
+  };
 
 retVal() {
   if (this.props.nearest_selected && this.props.nearest_route_single !== null) {
@@ -164,6 +189,8 @@ getName(t) {
       } catch (error) {
       }
     }
+    BackHandler.addEventListener('hardwareBackPress', this.handleBackButtonClick);
+  
   }
   
   async  reload() {
@@ -171,6 +198,9 @@ getName(t) {
     if (!this.props.card_exist) {
       this.props.getCard(this.props.user.userid);
     }
+    if (!this.props.routes) {
+      this.props.all_route();
+		}
     if (!this.props.walletRan) {
       this.props.get_wallet_info(this.props.user.userid);
     }
@@ -330,8 +360,6 @@ getName(t) {
      })
 
     
-      //send driver location server every 5 seconds
-      //this.props.sendLocation(this.props.user.d_id, this.props.latitude, this.props.longitude);
       if (this.props.nearbyroutes === null && this.props.locationGotten) {
         //this.props.getNearByRoutes(this.props.latitude, this.props.longitude);
       }
@@ -351,34 +379,85 @@ getName(t) {
       q.on('value', snapshot => {
         let result = snapshot.val();
         if (result !== null) {
-          // drivers.push(result);
           drivers = this.snapshotToArray(snapshot);
-          
       }
      });
 
+
+    //  this._interval = setInterval(() => {
+    //   this.reUpdateEveryThing();
+    //   this.sortoutthing();
+    // }, 1000);
   }
+
 
   snapshotToArray(snapshot) {
     var returnArr = [];
-
     snapshot.forEach(function(childSnapshot) {
         var item = childSnapshot.val();
         item.key = childSnapshot.key;
-        //if (item.route_id == 4) {
-          returnArr.push(item);
-          //}
-    });
-
+        //console.log("Item screenshot is "+JSON.stringify(item)+ " and key is "+item.key )
+        if (this.props.active_bus !== 0 && (item.bus_id == this.props.active_bus)) {
+            this.props.set_active_bus_info(item);
+            returnArr.push(item);
+        } 
+    }.bind(this));
     return returnArr;
 };
 
 
+  async componentWillReceiveProps() {
+  if (this.props.myroutes !== null && this.props.active_bus == 0) {
+        for (var i = 0; i < this.props.myroutes.length; i++) {
+          if (this.props.myroutes[i].payment_status == 'active' && this.props.myroutes[i].current_bus != 0) {
+              var buss = this.props.myroutes[i].current_bus;
+              this.props.set_active_bus(buss);
+              return;
+          }
+        }
+      }
+  }
+
+
+
+
+  getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
+    var R = 6371; // Radius of the earth in km
+    var dLat = this.deg2rad(lat2-lat1);  // deg2rad below
+    var dLon = this.deg2rad(lon2-lon1); 
+    var a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2)
+      ; 
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    var d = R * c; // Distance in km
+    var num = Math.round(d * 100) / 100
+    return num;
+  }
+  
+  deg2rad(deg) {
+    return deg * (Math.PI/180)
+  }
+
+
+
+  close(e) {
+    e.preventDefault()
+    this.setState({
+      openLoader: false,
+      msg: false
+    });
+  }
+
+
+
   async runroute(id) {
     this.setState({ getting_route: true });
+    this.setState({ openLoader: true });
+    this.setState({ isLoading: true });
     
     fetch('https://admin.rova.com.ng/api2/get-route', {
-      
             method: 'POST',
               headers: {
                 'Accept': 'application/json',
@@ -390,9 +469,9 @@ getName(t) {
             })
             .then((response) => response.json())
             .then((responseJson) => {
-              //console.log('Rova res is '+JSON.stringify(responseJson));
-              //this.props.saveRoute(responseJson)
               this.setState({ getting_route: false });
+              this.setState({ openLoader: false });
+              this.setState({ isLoading: false });
               this.props.getMyRoutes(responseJson);
               if (responseJson.length !== 0) {
                 var pickup = responseJson[0].pickup;
@@ -400,40 +479,116 @@ getName(t) {
                 var waypoints = responseJson[0].stops.map((point) => {
                   return point.stop;
                 }).join("|");
-
-                
                 this.setState({currentpickuplat: responseJson[0].pickup_coords_lat});
                 this.setState({currentpickuplng: responseJson[0].pickup_coords_lng});
                 this.setState({currentdropofflat: responseJson[0].dropoff_coords_lng});
                 this.setState({currentdropofflng: responseJson[0].dropoff_coords_lat});
-                
                 this.props.getRoute(pickup, dropoff, waypoints);
-                //
                }
             })
             .catch((error) => {
-              this.setState({ getting_route: false });
+              // this.setState({ getting_route: false });
+              this.setState({ isLoading: false });
+              this.setState({ msg: 'Network Unavailable!' });
+             
               
           })
-    //this.props.clearEverything();
   }
   
   
 
 componentDidMount() {
-  
-    
     isMounted = true;
     this.reload();
-    
-   
+    NetInfo.isConnected.fetch().then().done(() => {
+      NetInfo.isConnected.addEventListener('connectionChange', this.handleConnectionChange)
+    });
+
+  }
+
+  handleConnectionChange = (isConnected) => {
+    this.props.network_change(isConnected);
+    if (isConnected) {
+      this.props.resetNetwork();
+      if (!this.props.card_exist) {
+        this.props.getCard(this.props.user.userid);
+      }
+      if (!this.props.walletRan) {
+        this.props.get_wallet_info(this.props.user.userid);
+      }
+      //const response = await this.props.getMyRoutes(this.props.user.userid);
+      if(!this.props.route_set){
+        this.runroute(this.props.user.userid);
+      }
+    }
+  }
+
+ 
+  // componentDidUpdate() {
+  //   this.sortoutthing();
+  // }
+          
+  tabOne() {
+    if (this.props.active_bus_info == null) {
+      return(
+      <Tab heading="Nearby" tabStyle={{backgroundColor: '#FFF', }} activeTabStyle={{backgroundColor: '#FFF', }} activeTextStyle={{color: '#22A7F0', fontSize: 20, fontFamily: 'Montserrat-Regular'}} textStyle={{color: '#22313F', fontSize: 20, fontFamily: 'Montserrat-Regular'}} >
+                {this.props.nearbyroutes !== null && 
+                <TabOne navigation={this.props.navigation} />
+                }
+        </Tab>
+        );
+    } else if (!this.props.active_bus_info.trip_stated) {
+    return(
+      <Tab heading="Nearby" tabStyle={{backgroundColor: '#FFF', }} activeTabStyle={{backgroundColor: '#FFF', }} activeTextStyle={{color: '#22A7F0', fontSize: 20, fontFamily: 'Montserrat-Regular'}} textStyle={{color: '#22313F', fontSize: 20, fontFamily: 'Montserrat-Regular'}} >
+                {this.props.nearbyroutes !== null && 
+                <TabOne navigation={this.props.navigation} />
+                }
+        </Tab>
+        );
+    } else {
+      return null;
+    }
+  }
+
+
+  getWidth () {
+    if (this.props.active_bus_info == null) {
+      return '40%'
+    } else if (!this.props.active_bus_info.trip_stated) {
+      return '40%'
+    } else {
+      return '80%';
+    }
+  }
+  tabTwo() {
+    if (this.props.active_bus_info == null) {
+      return(
+      <Tab heading="My Trips" tabStyle={{backgroundColor: '#FFF'}}  activeTabStyle={{backgroundColor: '#FFF'}} activeTextStyle={{color: '#22A7F0', fontSize: 20, fontFamily: 'Montserrat-Bold'}} textStyle={{color: '#22313F', fontSize: 20, fontFamily: 'Montserrat-Regular'}} >
+                {this.props.myroutes  !== null && 
+                  <TabThree navigation={this.props.navigation} />
+                  }
+              </Tab>
+        );
+    } else if (!this.props.active_bus_info.trip_stated) {
+    return(
+      <Tab heading="My Trips" tabStyle={{backgroundColor: '#FFF'}}  activeTabStyle={{backgroundColor: '#FFF'}} activeTextStyle={{color: '#22A7F0', fontSize: 20, fontFamily: 'Montserrat-Bold'}} textStyle={{color: '#22313F', fontSize: 20, fontFamily: 'Montserrat-Regular'}} >
+                {this.props.myroutes  !== null && 
+                  <TabThree navigation={this.props.navigation} />
+                  }
+              </Tab>
+        );
+    } else {
+      return null;
+    }
   }
 
   componentWillUnmount() {
     navigator.geolocation.clearWatch(this.watchId);
+    clearInterval(this._interval);
     this.notificationListener.remove();
-    
-    //this.setState({mounted: false})
+    BackHandler.removeEventListener('hardwareBackPress', this.handleBackButtonClick);
+  
+    NetInfo.removeEventListener('connectionChange', this.handleConnectionChange)
     isMounted = false;
 }
 
@@ -464,22 +619,32 @@ conditionFetch(c) {
   } 
 }
 
+  handleBackButtonClick() {
+    BackHandler.exitApp();
+    return true;
+  }
+
+
   render() {
     return (
       <View style={styles.container}>
+   
+      <StatusBar backgroundColor="#22313F" barStyle="light-content" />
 
-          <Header style = {{borderBottomColor: "#22313F", borderBottomWidth: 1, backgroundColor: '#22313F'}}>
-          <StatusBar backgroundColor="#22313F" barStyle="dark-content" />
-          <Left>
+      <Header style = {{borderBottomColor: "#22313F", borderBottomWidth: 1, backgroundColor: '#22313F'}}>
+          
+       <Left>
             <Button
               transparent
               onPress={() => this.props.navigation.navigate("DrawerOpen")}
             >
-              <Icon style = {{color: '#FFF'}} name="menu" />
+              <Icon style = {{color: '#FFF', fontSize: 40, }} name="menu" />
             </Button>
           </Left>
           <Body>
-            <Text style = {{fontFamily: 'Montserrat-Bold', color: '#FFF'}}>ROVA</Text>
+          <Text style = {{fontFamily: (Platform.OS == 'ios') ? 'Montserrat-Regular' : 'Montserrat-Bold', fontSize: 20, color: '#FFF'}}>Rova</Text>
+          
+            {/* <Text style = {{fontFamily: 'Montserrat-Bold', fontSize: 20, color: '#FFF'}}>ROVA</Text> */}
           </Body>
           <Right>
             <TouchableOpacity
@@ -490,7 +655,7 @@ conditionFetch(c) {
               backgroundColor: '#FFF',
               padding: 5,
             }}
-            onPress={this.props.card_exist ? () => this.props.navigation.navigate('Wallet', {from: 'map'}) : () => alert("Kindly add a card first")}
+            onPress={this.props.card_exist ? () => this.props.navigation.navigate('Wallet', {from: 'map'}) : () => this.showAlert()}
             >
             
               <Text style = {{fontFamily: 'Montserrat-Regular',color: '#22313F'}}
@@ -510,7 +675,6 @@ conditionFetch(c) {
   renderContent() {
     return (
       <View style={styles.container}>
-
         <MapView
         provider={PROVIDER_GOOGLE}
         style={{ flex: 1,
@@ -531,7 +695,7 @@ conditionFetch(c) {
         followsUserLocation={true}
         showsCompass={true}
         initialRegion={this.state.region}
-        loadingEnabled={true}
+        //loadingEnabled={true}
         showsUserLocation={true}
         >
           {this.props.route_set && this.props.route.length > 0  &&
@@ -547,7 +711,7 @@ conditionFetch(c) {
               lineDashPhase = {100}
             />
           }
-          {this.props.myroutes !== null && 
+          {this.props.myroutes !== null && this.props.myroutes.length > 1 &&
           <MapView.Marker
               coordinate={{
                 latitude: this.props.nearest_selected ? Number(this.props.nearest_route_single[0].pickup_coords_lat) : Number(this.props.myroutes[0].pickup_coords_lat),
@@ -557,18 +721,18 @@ conditionFetch(c) {
             
               >
                <View style = {{
-            width: 10,
-            height: 10,
-            borderRadius: 10,
+            width: 20,
+            height: 20,
+            borderRadius: 20,
             alignContent: 'center',
             justifyContent: 'center',
             alignItems: 'center',
             backgroundColor: this.getRandomColor(),
           }}
             ><View style = {{
-            width: 5,
-            height: 5,
-            borderRadius: 5,
+            width: 12,
+            height: 12,
+            borderRadius: 12,
             backgroundColor: '#FFF',
           }}
             ></View>
@@ -599,7 +763,7 @@ conditionFetch(c) {
                 marginTop: 10,
                 alignSelf: 'center',
                 color: '#FFF',
-                fontFamily: 'Montserrat',
+                fontFamily: 'Montserrat-Regular',
               }}>Next stop: {this.props.stops.length > 0 && this.props.stops[0].end_address} </Text>
               
             </View>
@@ -623,18 +787,18 @@ conditionFetch(c) {
               //image={require('../../../img/car.png')}
             >
             <View style = {{
-            width: 10,
-            height: 10,
-            borderRadius: 10,
+            width: 20,
+            height: 20,
+            borderRadius: 20,
             alignContent: 'center',
             justifyContent: 'center',
             alignItems: 'center',
             backgroundColor: this.getRandomColor(),
           }}
             ><View style = {{
-            width: 5,
-            height: 5,
-            borderRadius: 5,
+            width: 12,
+            height: 12,
+            borderRadius: 12,
             backgroundColor: '#FFF',
           }}
             ></View>
@@ -666,14 +830,14 @@ conditionFetch(c) {
                 marginTop: 10,
                 alignSelf: 'center',
                 color: '#FFF',
-                fontFamily: 'Montserrat',
+                fontFamily: 'Montserrat-Regular',
               }}>ETA: {stop.duration.text} </Text>
                <Text style = {{
                 fontSize: 12,
                 marginTop: 10,
                 alignSelf: 'center',
                 color: '#FFF',
-                fontFamily: 'Montserrat',
+                fontFamily: 'Montserrat-Regular',
               }}>Distance: {stop.distance.text} </Text>
               
             </View>
@@ -681,7 +845,68 @@ conditionFetch(c) {
             </MapView.Marker>
           ))
       }
-      {this.props.myroutes !== null && drivers.length > 0 &&
+      
+      {this.props.myroutes !== null && drivers.length > 0 && this.props.active_bus !== 0 && this.props.active_bus_info !== null &&
+        <MapView.Marker
+        anchor={{ x: 0.5, y: 0.5 }}
+        zIndex={10}
+        style = {{
+          flex: 1,
+        }}
+        coordinate={{
+          latitude: Number(this.props.active_bus_info.latitude),
+          longitude: Number(this.props.active_bus_info.longitude)
+        }}>
+        <Animated.Image 
+          ref='image' 
+          style={{
+            flex: 1,
+            width: 22, height:22, 
+            resizeMode: 'contain',
+           // flex:1, height: undefined, width: undefined,
+            transform: [
+              { rotate: `${this.props.active_bus_info.angle}deg` }
+            ]}}
+             resizeMode="contain"
+          source={require('../../../assets/bus2.png')} />
+
+         
+          <MapView.Callout 
+            tooltip={true}
+            style={{ 
+              width: 250, height: 150,
+              backgroundColor: '#22313F',
+              borderRadius: 8,
+              borderWidth: 1,
+             }}
+            >
+            <View style = {{
+              alignItems: 'center',
+              paddingTop: 15,
+              paddingBottom: 15,
+              }}>
+              <Text style = {{
+                fontSize: 15,
+                marginTop: 10,
+                alignSelf: 'center',
+                color: '#FFF',
+                fontFamily: 'Montserrat-Bold',
+              }}>{`${this.props.active_bus_info.bus} ${this.props.active_bus_info.plate_number} #${this.props.active_bus_info.bus_id}`}</Text>
+             <Text style = {{
+                fontSize: 12,
+                marginTop: 10,
+                alignSelf: 'center',
+                color: '#FFF',
+                fontFamily: 'Montserrat-Regular',
+              }}> YOUR BUS </Text>
+            </View>
+            </MapView.Callout>
+
+        </MapView.Marker>
+        } 
+
+
+      {this.props.myroutes !== null && drivers.length > 0 && this.props.active_bus == null &&
         drivers.map((driver, i) => (
         <MapView.Marker
         key={i}
@@ -729,31 +954,23 @@ conditionFetch(c) {
                 color: '#FFF',
                 fontFamily: 'Montserrat-Bold',
               }}>{`${driver.bus} ${driver.plate_number} #${driver.bus_id}`}</Text>
-              {/* <Text style = {{
+             <Text style = {{
                 fontSize: 12,
                 marginTop: 10,
                 alignSelf: 'center',
                 color: '#FFF',
-                fontFamily: 'Montserrat',
-              }}>Bus condition: {this.conditionFetch(Number(driver.bus_condition))} </Text> */}
-              <Text style = {{
-                fontSize: 12,
-                marginTop: 10,
-                alignSelf: 'center',
-                color: '#FFF',
-                fontFamily: 'Montserrat',
+                fontFamily: 'Montserrat-Regular',
               }}>Available Sits: {driver.available_sits} </Text>
-              
               {driver.bus_status  &&
               <TouchableOpacity
               style = {{flex: 1, zIndex: 200}}
-              onPress={() => this.props.navigation.navigate('RouteSingle', { route_id: data.route_id, bus: data.bus_id, from: 'map' })}>
+              onPress={() => this.props.routes == null ? this.props.navigation.navigate('Route') : this.props.navigation.navigate('RouteSingle', { route_id: data.route_id, bus: data.bus_id, from: 'map' })}>
 							    <Text style = {{
                   fontSize: 12,
                   marginTop: 10,
                   alignSelf: 'center',
                   color: '#FFF',
-                  fontFamily: 'Montserrat',
+                  fontFamily: 'Montserrat-Regular',
                 }}>Available</Text>
               </TouchableOpacity>
               }
@@ -768,7 +985,7 @@ conditionFetch(c) {
         </MapView>
 
 
-        <Modal isVisible={this.props.my_selected && this.props.my_route_single !== null && this.props.payment === 'active'}>
+        <Modal isVisible={this.props.my_selected && this.props.my_route_single !== null && this.props.payment !== 'null'}>
           <View style={{ flex: 0.9, 
             backgroundColor: '#FFF',
             borderRadius: 20,
@@ -786,7 +1003,7 @@ conditionFetch(c) {
               fontSize: 15,
             }}>Show this to the bus driver in charge of your route</Text>
             
-            <Ticket ticket = {this.props.my_route_single}/>
+            <Ticket user = {this.props.user.userid}  ticket = {this.props.my_route_single}/>
           </View>
           <View style = {{ flex: 0.1, 
             backgroundColor: 'transparent',
@@ -839,17 +1056,105 @@ conditionFetch(c) {
               <View style={styles.panelHeader}>
                 <View style={styles.panelHandle} />
               </View>
-              <Tabs tabBarUnderlineStyle={{backgroundColor:'#22A7F0', height: 2, width: '40%', alignSelf: 'center', alignContent: 'center', alignItems: 'center', marginLeft: 20}}>
-              {this.props.nearbyroutes !== null &&
-              <Tab heading="Nearby" tabStyle={{backgroundColor: '#FFF', }} activeTabStyle={{backgroundColor: '#FFF', }} activeTextStyle={{color: '#22A7F0', fontSize: 20, fontFamily: 'Montserrat-Regular'}} textStyle={{color: '#22313F', fontSize: 20, fontFamily: 'Montserrat-Regular'}} >
-              <TabOne navigation={this.props.navigation} />
-              </Tab>
+              <Tabs tabBarUnderlineStyle={{
+                backgroundColor:'#22A7F0', height: 2, 
+             // width: this.props.active_bus == 0 ? '40%' : '90%',
+              borderColor: '#FFF', 
+              width: this.getWidth(),
+               alignSelf: 'center',
+                alignContent: 'center', 
+                alignItems: 'center', marginLeft: 20}}>
+              {this.props.active_bus !== 0 && this.props.active_bus_info !== null && this.props.active_bus_info.trip_stated &&
+              <Tab heading="Active Route" tabStyle={{backgroundColor: '#FFF', }} activeTabStyle={{backgroundColor: '#FFF', }} activeTextStyle={{color: '#22A7F0', fontSize: 20, fontFamily: 'Montserrat-Regular'}} textStyle={{color: '#22313F', fontSize: 20, fontFamily: 'Montserrat-Regular'}} >
+                  <View style = {{
+                    //flex: 0.1,
+                   // alignItems: 'center',
+                    marginTop:20,
+                    marginRight: 0,
+                    marginLeft: 10,
+                    marginBottom: 40
+                  }}>
+                  
+                    <Text style={styles.olu}>Distance from you: {this.getDistanceFromLatLonInKm(this.props.active_bus_info.latitude,this.props.active_bus_info.longitude,this.props.latitude,this.props.longitude)} KM</Text>
+                    <Text style={styles.olu}>Timing: {this.props.active_bus_info.time_to}</Text>
+                    <Text style={styles.olu}>Bus: {this.props.active_bus_info.bus} ({this.props.active_bus_info.plate_number})</Text>
+                    <Text style={styles.olu}>Driver Name: {this.props.active_bus_info.driver_name}</Text>
+
+                    <Text style={styles.olu}>Extra: {this.props.active_bus_info.extra}</Text>
+
+
+                  </View>
+                         
+
+                  <View style = {{
+                   // flex: 0.2,
+                    justifyContent: 'space-between',
+                    padding: 10,
+                    alignItems: 'center',
+                   
+                    // width: "90%",
+                    flexDirection: 'row',
+                  }}>
+                      <TouchableOpacity
+													style = {{
+                             backgroundColor: '#F49C00',
+                             paddingTop: 5,
+                            borderColor: '#F49C00',
+                            borderWidth: 1,
+                             borderRadius:10,
+                             paddingBottom: 5,
+                             paddingRight: 10,
+                             paddingLeft: 10,
+                            // margin: 20,
+                            // alignContent: 'center',
+                            // justifyContent: 'center',
+                            // // width: '40%',
+                            // // height: '10%',
+													}}
+													onPress={() => Communications.phonecall(this.props.active_bus_info.driver_tel, true)}>
+													
+                          <Text style={{
+                              fontSize: 20,
+                              fontFamily: 'Montserrat-Regular',
+                              color: '#FFF'
+                            }}> <Icon style = {{color: '#FFF', paddingRight: 10, fontSize: 20}}
+                            name = "call" /> Call Driver</Text>
+													</TouchableOpacity>
+
+
+                          <TouchableOpacity
+													style = {
+                            {paddingTop: 2,
+                            
+                             backgroundColor: '#318bfb',
+                             paddingTop: 5,
+                            borderColor: '#318bfb',
+                            borderWidth: 1,
+                             borderRadius:10,
+                             paddingBottom: 5,
+                             paddingRight: 10,
+                             paddingLeft: 10,
+                         
+													}}
+													onPress={() => Communications.text(this.props.active_bus_info.driver_tel, true)}>
+													
+                          <Text style={{
+                              fontSize: 20,
+                              fontFamily: 'Montserrat-Regular',
+                              color: '#FFF'
+                            }}> <Icon style = {{color: '#FFF', paddingRight: 10, fontSize: 20}}
+                            name = "text" /> Message</Text>
+													</TouchableOpacity>
+
+
+                      </View>
+                  
+                  </Tab>
               }
-              {this.props.myroutes  !== null &&
-                <Tab heading="My Trips" tabStyle={{backgroundColor: '#FFF'}}  activeTabStyle={{backgroundColor: '#FFF'}} activeTextStyle={{color: '#22A7F0', fontSize: 20, fontFamily: 'Montserrat-Regular'}} textStyle={{color: '#22313F', fontSize: 20, fontFamily: 'Montserrat-Regular'}} >
-              <TabThree navigation={this.props.navigation} />
-              </Tab>
-              }
+             {this.tabOne()}
+
+             {this.tabTwo()}
+              
               </Tabs>
               
 
@@ -857,11 +1162,34 @@ conditionFetch(c) {
           </Interactable.View>
         </View>
           }
-				<SnackBar visible={!this.props.network_connected} textMessage="Network Unavailable!" actionHandler={()=> this.reload()} actionText="Try Again" accentColor = '#F49C00'/>
-        <ProgressDialog 
+
+           <AwesomeAlert
+          show={this.state.showAlert}
+          showProgress={false}
+          title="No Card Saved"
+          message="You need to add a card to fund your wallet"
+          closeOnTouchOutside={true}
+          closeOnHardwareBackPress={false}
+          showCancelButton={true}
+          showConfirmButton={true}
+          cancelText="Cancel"
+          confirmText="Add Card"
+          confirmButtonColor="#22313F"
+          onCancelPressed={() => {
+            this.hideAlert();
+          }}
+          onConfirmPressed={() => {
+            this.props.navigation.navigate("CardView", {from: 'map'})
+          }}
+        />
+
+				{/* <SnackBar visible={!this.props.network_connected} textMessage="Network Unavailable!" actionHandler={()=> this.reload()} actionText="Try Again" accentColor = '#F49C00'/> */}
+        {/* <ProgressDialog 
 				visible={(this.props.getting_wallet || this.state.getting_route) && this.props.network_connected} 
 				message="Please, wait..."
-				/>
+				/> */}
+        <Loader show = {this.state.openLoader} msg = {this.state.msg} close={this.close}  loading = {this.state.isLoading}/> 
+      
       </View>
             
     );
@@ -961,7 +1289,8 @@ const styles = StyleSheet.create({
   panelButton: {
     padding: 20,
     borderRadius: 10,
-    backgroundColor: '#318bfb',
+    // backgroundColor: '#318bfb',
+    backgroundColor: '#22313F',
     alignItems: 'center',
     marginVertical: 10
   },
@@ -978,6 +1307,14 @@ const styles = StyleSheet.create({
   map: {
     height: Screen.height,
     width: Screen.width
+  },
+  olu: {
+    fontSize: 18,
+    fontFamily: 'Montserrat-Regular',
+    color: '#22313F',
+    padding: 10,
+    //paddingTop:5,
+    
   }
 });
 
@@ -1168,6 +1505,7 @@ const mapStateToProps = ({ map }) => {
     distanceInHR,
     nearbydriver,
     shown,
+    active_bus,
     locationGotten,
     myroutes,
     payment,
@@ -1176,9 +1514,10 @@ const mapStateToProps = ({ map }) => {
     stops,
     nearest_selected,
     wallet,
-    wallet_nice,
+    wallet_nice, routes,
     nearest_route_single,
     walletRan,
+    active_bus_info,
     my_selected,
     my_route_single,
     nearbyroutes,
@@ -1200,6 +1539,7 @@ const mapStateToProps = ({ map }) => {
     longitude,
     getting_wallet,
     wallet,
+    active_bus,
     wallet_nice,
     dropoff_coords,
     latitudeDelta,fcm_token,
@@ -1221,7 +1561,9 @@ const mapStateToProps = ({ map }) => {
     distance_error,
     getting_distance,
     fetching_prices,
+    routes,
     fetch_error,
+    active_bus_info,
     nearbydriver,
     locationGotten,
     driversGotten,
@@ -1265,8 +1607,10 @@ export default connect(mapStateToProps, {
   shownOLU, get_wallet_info,
   setLongitude,
   setLatitude,
-  getMyRoutes,
+  getMyRoutes, all_route,
+  set_active_bus,
   my_route_selected,
+  set_active_bus_info,
   resetNetwork,
   getNearByRoutes,
 })(Map);

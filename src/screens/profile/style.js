@@ -31,7 +31,7 @@ export default {
     padding: 20,
     borderRadius: 10, 
     alignSelf: 'center',
-    backgroundColor: '#22A7F0',
+    backgroundColor: '#22313F',
     //backgroundColor: '#87D37C',
     //backgroundColor: '#de6d77',
     alignItems: 'center',
@@ -41,7 +41,7 @@ export default {
     fontSize: 20,
     //fontWeight: 'bold',
     color: 'white',
-    fontFamily: "Montserrat",
+    fontFamily: "Montserrat-Regular",
   },
   register: {
     backgroundColor: "red",
@@ -85,7 +85,7 @@ export default {
     borderRadius: 6,
 },
 text: {
-    fontFamily: "Montserrat",
+    fontFamily: "Montserrat-Regular",
     //alignSelf: 'center',
     justifyContent:'center',
     lineHeight:32,
@@ -110,7 +110,7 @@ text: {
   },
   continueText: {
     color: '#FFF',
-    fontFamily: 'Montserrat',
+    fontFamily: 'Montserrat-Regular',
     textAlign: 'center',
   },
 };

@@ -16,7 +16,6 @@ export default class App1 extends React.Component {
         <View style = {{
           flex: 1,
         }}>
-      <StatusBar backgroundColor='#009AD5' barStyle='light-content' />
          
           <App/>
         </View>

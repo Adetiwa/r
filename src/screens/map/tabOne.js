@@ -159,26 +159,25 @@ class TabOne extends Component {
                  
         </View>
            
-        <View style={
+            <TouchableOpacity
+            style={
               {
                 flex: 8,
                 padding: 20,
                 borderRadius: 10,
-                backgroundColor: '#318bfb',
+                backgroundColor: '#22313F',
                 alignItems: 'center',
                 marginVertical: 10
               }
-            }>
-            <TouchableOpacity
-              onPress={() => this.props.navigation.navigate('RouteSingle', { route_id: this.props.nearest_route_single[0].route_id })}>
-            <Text style={{
+            }
+            onPress={() => this.props.routes === null ? this.props.navigation.navigate('Route') : this.props.navigation.navigate('RouteSingle', { route_id: this.props.nearest_route_single[0].route_id })}>
+				   <Text style={{
                     fontSize: 17,
                     fontFamily: 'Montserrat-Regular',
                     color: 'white'
                   }}>View More</Text>
             </TouchableOpacity>
-        </View>
-
+        
         </View>        
 
           </View>

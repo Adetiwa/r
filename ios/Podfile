@@ -30,6 +30,8 @@ target 'rova' do
   pod 'lottie-react-native', :path => '../node_modules/lottie-react-native'
   pod 'Firebase/Core'
   pod 'FirebaseMessaging'
+  pod 'react-native-notifications', :path => '../node_modules/react-native-notifications'
+
 end
 
 post_install do |installer|

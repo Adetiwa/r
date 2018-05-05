@@ -130,7 +130,7 @@ class TabThree extends Component {
                <TouchableOpacity
 								onPress = {() => this.selectShit(data.route_id, data.payment)}>
                 {data.payment ?
-                    <CardView  av = {true} distance = {data.route_id} payment_amount = {data.payment_amount} expires = {this.getDataDiff(data.date_expired)} payment_method_of_payment = {data.payment_method_of_payment} word = {data.route} payment = {data.payment_status}/>
+                    <CardView  av = {true} distance = {data.route_id} payment_amount = {data.payment_amount} expires = {this.getDataDiff(data.date_expired)} active = {this.getDataDiff(data.date_active)} payment_method_of_payment = {data.payment_method_of_payment} word = {data.route} payment = {data.payment_status}/>
                   :
                   <CardView  av = {true} distance = {data.route_id} word = {data.route} payment = {data.payment}/>
                 }
@@ -201,27 +201,26 @@ class TabThree extends Component {
                
                  
         </View>
-            <View style={
+            <TouchableOpacity
+             style={
               {
                 flex: 8,
                 padding: 20,
                 borderRadius: 10,
-                backgroundColor: '#318bfb',
+                backgroundColor: '#22313F',
                 alignItems: 'center',
                 marginVertical: 10
               }
-            }>
-            <TouchableOpacity
-              onPress={() => this.props.navigation.navigate('RouteSingle', { route_id: this.props.my_route_single[0].route_id })}>
-            <Text style={{
+            }
+            onPress={() => this.props.routes === null ? this.props.navigation.navigate('Route') : this.props.navigation.navigate('RouteSingle', { route_id: this.props.my_route_single[0].route_id })}>
+				   <Text style={{
                     fontSize: 17,
                     fontFamily: 'Montserrat-Regular',
                     color: 'white'
                   }}>{this.getWord(this.props.my_route_single[0].payment)}</Text>
             </TouchableOpacity>
         </View>
-        </View>        
-
+       
           </View>
           
         }
